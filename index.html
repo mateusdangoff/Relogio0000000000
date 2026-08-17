@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relógio do Tempo e Vento - MateusDang</title>
+    <style>
+        :root {
+            --color-seasons: #ff3333;  /* Vermelho */
+            --color-zodiac: #ffaa00;   /* Laranja */
+            --color-cities: #ffff33;   /* Amarelo */
+            --color-hours: #33ff33;    /* Verde */
+            --color-minutes: #00ffff;  /* Ciano */
+            --color-seconds: #ff00ff;  /* Magenta */
+            --color-center: #ffffff;   /* Branco/Dourado */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #11111a 0%, #000000 100%);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #relogio-container {
+            position: relative;
+            width: 100vmin;
+            height: 100vmin;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* O ponteiro luminoso do topo (Norte / Tempo Atual) */
+        #indicator {
+            position: absolute;
+            top: 2vmin;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 48vmin;
+            background: linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,0.1) 80%, transparent 100%);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px rgba(255, 255, 255, 0.5);
+            z-index: 20;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        /* Estrutura dos Anéis */
+        .ring {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            transition: transform 0.1s linear;
+        }
+
+        /* Cores e Brilhos Arco-íris dos Anéis */
+        .ring.seasons { border-color: rgba(255, 51, 51, 0.4); box-shadow: 0 0 20px rgba(255, 51, 51, 0.1) inset, 0 0 20px rgba(255, 51, 51, 0.1); }
+        .ring.zodiac { border-color: rgba(255, 170, 0, 0.4); box-shadow: 0 0 20px rgba(255, 170, 0, 0.1) inset, 0 0 20px rgba(255, 170, 0, 0.1); }
+        .ring.cities { border-color: transparent; } /* Sem borda, apenas texto */
+        .ring.hours { border-color: rgba(51, 255, 51, 0.4); box-shadow: 0 0 20px rgba(51, 255, 51, 0.1) inset, 0 0 20px rgba(51, 255, 51, 0.1); }
+        .ring.minutes { border-color: rgba(0, 255, 255, 0.4); box-shadow: 0 0 20px rgba(0, 255, 255, 0.1) inset, 0 0 20px rgba(0, 255, 255, 0.1); }
+        .ring.seconds { border-color: rgba(255, 0, 255, 0.4); box-shadow: 0 0 20px rgba(255, 0, 255, 0.1) inset, 0 0 20px rgba(255, 0, 255, 0.1); }
+
+        .marker {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            white-space: nowrap;
+            font-weight: bold;
+            text-shadow: 0 0 8px currentColor;
+        }
+
+        /* Rosa dos Ventos Central */
+        .compass-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 14vmin;
+            height: 14vmin;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .star-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            animation: spinWind 40s linear infinite;
+        }
+
+        .star {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 9vmin;
+            height: 9vmin;
+            background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 60%);
+            border: 2px solid var(--color-center);
+            box-shadow: 0 0 15px var(--color-center);
+        }
+        .star1 { transform: translate(-50%, -50%) rotate(0deg); }
+        .star2 { transform: translate(-50%, -50%) rotate(45deg); }
+
+        /* Direções fixas */
+        .dir {
+            position: absolute;
+            font-size: 2.2vmin;
+            font-weight: bold;
+            color: gold;
+            text-shadow: 0 0 10px gold;
+        }
+        .dir.n { top: -4vmin; left: 50%; transform: translateX(-50%); color: #ff5555;}
+        .dir.s { bottom: -4vmin; left: 50%; transform: translateX(-50%); }
+        .dir.l { right: -4vmin; top: 50%; transform: translateY(-50%); }
+        .dir.o { left: -4vmin; top: 50%; transform: translateY(-50%); }
+
+        /* Relógio Digital no Centro */
+        #digital-time {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2vmin;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px white, 0 0 20px cyan;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5vmin 1vmin;
+            border-radius: 1vmin;
+            z-index: 15;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        /* Créditos */
+        .credits {
+            position: absolute;
+            bottom: 2vmin;
+            width: 100%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 1.5vmin;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 30;
+            text-shadow: 0 0 5px rgba(255,255,255,0.3);
+        }
+
+        @keyframes spinWind {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="relogio-container">
+        <div id="indicator"></div>
+        
+        <!-- Os Anéis Rotativos -->
+        <div id="ring-seasons" class="ring seasons"></div>
+        <div id="ring-zodiac" class="ring zodiac"></div>
+        <div id="ring-cities" class="ring cities"></div>
+        <div id="ring-hours" class="ring hours"></div>
+        <div id="ring-minutes" class="ring minutes"></div>
+        <div id="ring-seconds" class="ring seconds"></div>
+
+        <!-- Rosa dos Ventos (Centro) -->
+        <div class="compass-center">
+            <div class="star-container">
+                <div class="star star1"></div>
+                <div class="star star2"></div>
+            </div>
+            <span class="dir n">N</span>
+            <span class="dir s">S</span>
+            <span class="dir l">L</span>
+            <span class="dir o">O</span>
+            <div id="digital-time">00:00:00</div>
+        </div>
+    </div>
+
+    <div class="credits">
+        Relógio do Tempo e Vento | Desenvolvedor: MateusDang - SAJ - BAHIA - BRAZIL
+    </div>
+
+    <script>
+        // Função para espalhar os marcadores uniformemente
+        function createRingMarkers(ringId, count, radiusVmin, color, getLabelFn) {
+            const ring = document.getElementById(ringId);
+            ring.style.width = `${radiusVmin * 2}vmin`;
+            ring.style.height = `${radiusVmin * 2}vmin`;
+            ring.style.color = color;
+
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'marker';
+                el.innerHTML = getLabelFn(i);
+                // Calcula o ângulo e posiciona
+                const angle = i * (360 / count);
+                el.style.transform = `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radiusVmin}vmin)`;
+                
+                // Reduz fonte para pontos intermediários
+                if(el.innerHTML === '•') el.style.fontSize = '1vmin';
+                else el.style.fontSize = `${Math.max(1.2, 40 / radiusVmin)}vmin`;
+                
+                ring.appendChild(el);
+            }
+        }
+
+        // Função para espalhar marcadores em ângulos específicos (Zodíaco, Estações, Cidades)
+        function createSpecificMarkers(ringId, items, radiusVmin, color, fontSizeStr = null) {
+            const ring = document.getElementById(ringId);
+            ring.style.width = `${radiusVmin * 2}vmin`;
+            ring.style.height = `${radiusVmin * 2}vmin`;
+            ring.style.color = color;
+
+            items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'marker';
+                el.innerHTML = item.text;
+                el.style.transform = `translate(-50%, -50%) rotate(${item.angle}deg) translateY(-${radiusVmin}vmin)`;
+                if (fontSizeStr) el.style.fontSize = fontSizeStr;
+                ring.appendChild(el);
+            });
+        }
+
+        // --- DADOS (Estações Hemisfério Sul) ---
+        const seasonsData = [
+            { text: '🌸 PRIMAVERA', day: 265 },
+            { text: '☀️ VERÃO', day: 355 },
+            { text: '🍂 OUTONO', day: 79 },
+            { text: '❄️ INVERNO', day: 172 }
+        ].map(s => ({ ...s, angle: s.day * (360/365) }));
+
+        // --- DADOS (Signos do Zodíaco) ---
+        const zodiacData = [
+            { text: '♈ Áries', day: 80 }, { text: '♉ Touro', day: 110 },
+            { text: '♊ Gêmeos', day: 141 }, { text: '♋ Câncer', day: 172 },
+            { text: '♌ Leão', day: 203 }, { text: '♍ Virgem', day: 235 },
+            { text: '♎ Libra', day: 266 }, { text: '♏ Escorpião', day: 296 },
+            { text: '♐ Sagitário', day: 326 }, { text: '♑ Capricórnio', day: 356 },
+            { text: '♒ Aquário', day: 20 }, { text: '♓ Peixes', day: 50 }
+        ].map(z => ({ ...z, angle: z.day * (360/365) }));
+
+        // --- DADOS (Capitais alinhadas automaticamente com o Fuso Horário Local) ---
+        const localOffset = new Date().getTimezoneOffset() / -60;
+        const citiesRaw = [
+            { name: 'Brasília (BR)', offset: -3 },
+            { name: 'Nova York (US)', offset: -4 },
+            { name: 'Londres (UK)', offset: 0 },
+            { name: 'Paris (FR)', offset: 1 },
+            { name: 'Moscou (RU)', offset: 3 },
+            { name: 'Tóquio (JP)', offset: 9 },
+            { name: 'Sydney (AU)', offset: 10 },
+            { name: 'Pequim (CN)', offset: 8 }
+        ];
+        // Calcula o ângulo da cidade no anel de 24h em relação à hora local do usuário
+        const citiesData = citiesRaw.map(c => {
+            const diff = c.offset - localOffset;
+            return { text: c.name, angle: diff * 15 }; // 15 graus por hora
+        });
+
+        // Montagem de todos os Anéis
+        createRingMarkers('ring-seconds', 60, 16, 'var(--color-seconds)', i => i % 5 === 0 ? String(i).padStart(2,'0') : '•');
+        createRingMarkers('ring-minutes', 60, 23, 'var(--color-minutes)', i => i % 5 === 0 ? String(i).padStart(2,'0') : '•');
+        createRingMarkers('ring-hours', 24, 30, 'var(--color-hours)', i => String(i).padStart(2,'0'));
+        
+        createSpecificMarkers('ring-cities', citiesData, 35, 'var(--color-cities)', '1.4vmin');
+        createSpecificMarkers('ring-zodiac', zodiacData, 41, 'var(--color-zodiac)', '1.8vmin');
+        createSpecificMarkers('ring-seasons', seasonsData, 47, 'var(--color-seasons)', '2.2vmin');
+
+        // Loop de Atualização em Tempo Real (Request Animation Frame para fluidez extrema)
+        function updateClock() {
+            const now = new Date();
+            const ms = now.getMilliseconds();
+            const s = now.getSeconds();
+            const m = now.getMinutes();
+            const h = now.getHours();
+
+            // Fração do ano para rodar Signos e Estações
+            const startOfYear = new Date(now.getFullYear(), 0, 0);
+            const diff = now - startOfYear;
+            const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const fractionalDay = dayOfYear + (h / 24) + (m / 1440);
+
+            // Cálculos Angulares contínuos (Sentido anti-horário para o marcador alinhar no Norte/Topo)
+            const secAngle = -((s + ms/1000) * 6); 
+            const minAngle = -((m + s/60 + ms/60000) * 6);
+            const hourAngle = -((h + m/60 + s/3600) * 15);
+            const yearAngle = -(fractionalDay * (360/365));
+
+            // Aplica as rotações
+            document.getElementById('ring-seconds').style.transform = `translate(-50%, -50%) rotate(${secAngle}deg)`;
+            document.getElementById('ring-minutes').style.transform = `translate(-50%, -50%) rotate(${minAngle}deg)`;
+            
+            // As cidades acompanham estritamente a rotação do anel das horas
+            document.getElementById('ring-hours').style.transform = `translate(-50%, -50%) rotate(${hourAngle}deg)`;
+            document.getElementById('ring-cities').style.transform = `translate(-50%, -50%) rotate(${hourAngle}deg)`;
+            
+            document.getElementById('ring-zodiac').style.transform = `translate(-50%, -50%) rotate(${yearAngle}deg)`;
+            document.getElementById('ring-seasons').style.transform = `translate(-50%, -50%) rotate(${yearAngle}deg)`;
+
+            // Atualiza tempo digital (Centro)
+            document.getElementById('digital-time').innerHTML = 
+                `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            requestAnimationFrame(updateClock);
+        }
+
+        // Inicia a Magia
+        updateClock();
+    </script>
+</body>
+</html>
